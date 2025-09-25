@@ -33,7 +33,7 @@ jobs:
         env:
           SIGNING_KEY_BASE64: ${{ secrets.SIGNING_KEY_BASE64 }}
         run: |
-          echo $SIGNING_KEY_BASE64 | base64 --decode --ignore-garbage > android/app/my-release-key.jks
+          echo "$SIGNING_KEY_BASE64" | base64 --decode --ignore-garbage > android/app/my-release-key.jks
         
       # بررسی می‌کنیم که آیا فایل کلید ساخته شده است
       - name: Verify Keystore File
