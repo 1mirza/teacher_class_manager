@@ -1,5 +1,3 @@
-# .github/workflows/build_flutter.yml
-
 name: Build and Sign Flutter App
 
 on:
@@ -12,10 +10,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
           java-version: '17'
@@ -28,61 +26,36 @@ jobs:
       - name: Get Flutter dependencies
         run: flutter pub get
 
-      # مراحل عیب‌یابی دقیق برای رمزگشایی کلید
-      - name: 1. Verify Secret and Save to File
-        run: |
-          echo "Checking secret length..."
-          SECRET_LENGTH=$(echo "${{ secrets.SIGNING_KEY_BASE64 }}" | wc -c)
-          echo "Secret length is: $SECRET_LENGTH characters."
-          if [ "$SECRET_LENGTH" -lt "100" ]; then
-            echo "Error: Secret seems too short. Please verify it was copied correctly."
-            exit 1
-          fi
-          echo "${{ secrets.SIGNING_KEY_BASE64 }}" > temp_keystore.b64
-          echo "Secret content saved to temp_keystore.b64"
+      - name: Decode Keystore
+        run: echo "${{ secrets.SIGNING_KEY_BASE64 }}" | base64 --decode --ignore-garbage > android/app/my-release-key.jks
 
-      - name: 2. Inspect Temporary File
-        run: |
-          echo "Inspecting the start of the temp file:"
-          head -n 2 temp_keystore.b64
-          echo "---"
-          echo "Inspecting the end of the temp file:"
-          tail -n 2 temp_keystore.b64
-
-      - name: 3. Decode Keystore using Python from File
-        run: |
-          echo "Attempting to decode temp_keystore.b64 using Python..."
-          python -c "import base64; f_in = open('temp_keystore.b64', 'r'); keystore_b64 = f_in.read(); f_in.close(); keystore_bytes = base64.b64decode(keystore_b64); f_out = open('android/app/my-release-key.jks', 'wb'); f_out.write(keystore_bytes); f_out.close()"
-          echo "Python script finished."
-        
-      # بررسی می‌کنیم که آیا فایل کلید ساخته شده است
-      - name: Verify Keystore File
-        run: |
-          if [ -f "android/app/my-release-key.jks" ]; then
-            echo "Keystore file created successfully."
-            ls -l android/app/my-release-key.jks
-          else
-            echo "Error: Keystore file was not created."
-            exit 1
-          fi
-
-      # ساخت فایل key.properties با استفاده از GitHub Secrets
       - name: Create key.properties file
         run: |
           echo "storeFile=my-release-key.jks" > android/key.properties
           echo "storePassword=${{ secrets.STORE_PASSWORD }}" >> android/key.properties
           echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> android/key.properties
           echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> android/key.properties
+      
+      # --- مراحل جدید عیب‌یابی ---
+      - name: Verify key.properties Content (DEBUG)
+        run: |
+          echo "--- Verifying content of key.properties ---"
+          cat android/key.properties
+          echo "-------------------------------------------"
+          
+      - name: Check File Location (DEBUG)
+        run: |
+          echo "--- Checking location and permissions ---"
+          ls -l android/
+          echo "---------------------------------------"
+      # ---------------------------
 
-      # ساخت فایل APK امضا شده
       - name: Build Signed APK
         run: flutter build apk --release
 
-      # ساخت فایل App Bundle امضا شده
       - name: Build Signed App Bundle
         run: flutter build appbundle --release
 
-      # آپلود آرتیفکت‌ها
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
@@ -94,4 +67,3 @@ jobs:
         with:
           name: release-appbundle
           path: build/app/outputs/bundle/release/app-release.aab
-
