@@ -38,17 +38,11 @@ jobs:
             echo "Secret is present and not empty."
           fi
       
-      # مرحله ۲ دیباگ: ۲۰ کاراکتر اول و آخر سکرت را نمایش می‌دهیم
-      - name: Inspect Secret Content (for debugging)
-        run: |
-          SECRET_CONTENT="${{ secrets.SIGNING_KEY_BASE64 }}"
-          echo "First 20 chars: $(echo $SECRET_CONTENT | head -c 20)"
-          echo "Last 20 chars: $(echo $SECRET_CONTENT | tail -c 20)"
-
-      # مرحله اصلی: خواندن کلید امضا از GitHub Secrets و ساخت فایل jks
+      # مرحله اصلی: خواندن کلید امضا و ساخت فایل jks به روشی مطمئن‌تر
       - name: Decode Keystore
         run: |
-          echo "${{ secrets.SIGNING_KEY_BASE64 }}" | base64 --decode --ignore-garbage > android/app/my-release-key.jks
+          echo "${{ secrets.SIGNING_KEY_BASE64 }}" > temp_keystore.b64
+          base64 --decode --ignore-garbage temp_keystore.b64 > android/app/my-release-key.jks
         
       # مرحله ۳ دیباگ: بررسی می‌کنیم که آیا فایل کلید ساخته شده است
       - name: Verify Keystore File
@@ -79,14 +73,12 @@ jobs:
 
       # آپلود آرتیفکت‌ها
       - name: Upload APK Artifact
-        # FIXED: Updated from v3 to v4
         uses: actions/upload-artifact@v4
         with:
           name: release-apk
           path: build/app/outputs/flutter-apk/app-release.apk
 
       - name: Upload App Bundle Artifact
-        # FIXED: Updated from v-3 to v4
         uses: actions/upload-artifact@v4
         with:
           name: release-appbundle
