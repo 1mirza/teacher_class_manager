@@ -17,17 +17,17 @@ if (localPropertiesFile.exists()) {
 val flutterVersionCode = localProperties.getProperty("flutter.versionCode") ?: "1"
 val flutterVersionName = localProperties.getProperty("flutter.versionName") ?: "1.0"
 
-// خواندن key.properties با سینتکس صحیح Kotlin
+// خواندن key.properties از مسیر صحیح
 val keystoreProperties = Properties()
-val keystorePropertiesFile = rootProject.file("android/key.properties")
+// *** FIX: مسیر از "android/key.properties" به "key.properties" اصلاح شد ***
+val keystorePropertiesFile = rootProject.file("key.properties")
 if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(FileInputStream(keystorePropertiesFile))
 }
 
 android {
     namespace = "com.example.teacher_class_manager"
-    // *** FIX: Upgrading SDK and NDK versions as required by plugins ***
-    compileSdk = 36 
+    compileSdk = 36
     ndkVersion = "27.0.12077973"
 
     compileOptions {
@@ -48,18 +48,19 @@ android {
     defaultConfig {
         applicationId = "com.example.teacher_class_manager"
         minSdk = 21
-        targetSdk = 36 // Best practice to match targetSdk with compileSdk
+        targetSdk = 36
         versionCode = flutterVersionCode.toInt()
         versionName = flutterVersionName
     }
 
-    // اضافه کردن بخش امضای دیجیتال با سینتکس صحیح Kotlin
     signingConfigs {
         create("release") {
-            keyAlias = keystoreProperties.getProperty("keyAlias")
-            keyPassword = keystoreProperties.getProperty("keyPassword")
-            storeFile = file("my-release-key.jks")
-            storePassword = keystoreProperties.getProperty("storePassword")
+            if (keystorePropertiesFile.exists()) {
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
+                storeFile = file("my-release-key.jks")
+                storePassword = keystoreProperties.getProperty("storePassword")
+            }
         }
     }
 
@@ -68,7 +69,6 @@ android {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            // اتصال به کانفیگ امضا
             signingConfig = signingConfigs.getByName("release")
         }
     }
@@ -79,7 +79,6 @@ flutter {
 }
 
 dependencies {
-    // نسخه kotlin-stdlib باید با نسخه پلاگین Kotlin هماهنگ باشد
     implementation("org.jetbrains.kotlin:kotlin-stdlib:1.9.23")
 }
 
