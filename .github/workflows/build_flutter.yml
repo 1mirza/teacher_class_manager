@@ -28,12 +28,32 @@ jobs:
       - name: Get Flutter dependencies
         run: flutter pub get
 
-      # مرحله اصلی: خواندن کلید امضا و ساخت فایل jks به روشی کاملا امن و استاندارد
-      - name: Decode Keystore
-        env:
-          SIGNING_KEY_BASE64: ${{ secrets.SIGNING_KEY_BASE64 }}
+      # مراحل عیب‌یابی دقیق برای رمزگشایی کلید
+      - name: 1. Verify Secret and Save to File
         run: |
-          echo "$SIGNING_KEY_BASE64" | base64 --decode --ignore-garbage > android/app/my-release-key.jks
+          echo "Checking secret length..."
+          SECRET_LENGTH=$(echo "${{ secrets.SIGNING_KEY_BASE64 }}" | wc -c)
+          echo "Secret length is: $SECRET_LENGTH characters."
+          if [ "$SECRET_LENGTH" -lt "100" ]; then
+            echo "Error: Secret seems too short. Please verify it was copied correctly."
+            exit 1
+          fi
+          echo "${{ secrets.SIGNING_KEY_BASE64 }}" > temp_keystore.b64
+          echo "Secret content saved to temp_keystore.b64"
+
+      - name: 2. Inspect Temporary File
+        run: |
+          echo "Inspecting the start of the temp file:"
+          head -n 2 temp_keystore.b64
+          echo "---"
+          echo "Inspecting the end of the temp file:"
+          tail -n 2 temp_keystore.b64
+
+      - name: 3. Decode Keystore using Python from File
+        run: |
+          echo "Attempting to decode temp_keystore.b64 using Python..."
+          python -c "import base64; f_in = open('temp_keystore.b64', 'r'); keystore_b64 = f_in.read(); f_in.close(); keystore_bytes = base64.b64decode(keystore_b64); f_out = open('android/app/my-release-key.jks', 'wb'); f_out.write(keystore_bytes); f_out.close()"
+          echo "Python script finished."
         
       # بررسی می‌کنیم که آیا فایل کلید ساخته شده است
       - name: Verify Keystore File
