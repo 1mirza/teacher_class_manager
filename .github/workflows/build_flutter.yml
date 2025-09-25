@@ -28,11 +28,39 @@ jobs:
       - name: Get Flutter dependencies
         run: flutter pub get
 
-      # مرحله جدید: خواندن کلید امضا از GitHub Secrets و ساخت فایل jks
+      # مرحله ۱ دیباگ: بررسی می‌کنیم که آیا سکرت خالی است یا نه
+      - name: Check Secret Availability
+        run: |
+          if [ -z "${{ secrets.SIGNING_KEY_BASE64 }}" ]; then
+            echo "Error: SIGNING_KEY_BASE64 secret is not set or is empty."
+            exit 1
+          else
+            echo "Secret is present and not empty."
+          fi
+      
+      # مرحله ۲ دیباگ: ۲۰ کاراکتر اول و آخر سکرت را نمایش می‌دهیم
+      - name: Inspect Secret Content (for debugging)
+        run: |
+          SECRET_CONTENT="${{ secrets.SIGNING_KEY_BASE64 }}"
+          echo "First 20 chars: $(echo $SECRET_CONTENT | head -c 20)"
+          echo "Last 20 chars: $(echo $SECRET_CONTENT | tail -c 20)"
+
+      # مرحله اصلی: خواندن کلید امضا از GitHub Secrets و ساخت فایل jks
       - name: Decode Keystore
         run: |
           echo "${{ secrets.SIGNING_KEY_BASE64 }}" | base64 --decode > android/app/my-release-key.jks
         
+      # مرحله ۳ دیباگ: بررسی می‌کنیم که آیا فایل کلید ساخته شده است
+      - name: Verify Keystore File
+        run: |
+          if [ -f "android/app/my-release-key.jks" ]; then
+            echo "Keystore file created successfully."
+            ls -l android/app/my-release-key.jks
+          else
+            echo "Error: Keystore file was not created."
+            exit 1
+          fi
+
       # مرحله جدید: ساخت فایل key.properties با استفاده از GitHub Secrets
       - name: Create key.properties file
         run: |
@@ -58,7 +86,7 @@ jobs:
           path: build/app/outputs/flutter-apk/app-release.apk
 
       - name: Upload App Bundle Artifact
-        # FIXED: Updated from v3 to v4
+        # FIXED: Updated from v-3 to v4
         uses: actions/upload-artifact@v4
         with:
           name: release-appbundle
