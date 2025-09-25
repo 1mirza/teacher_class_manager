@@ -40,7 +40,6 @@ jobs:
           
           key_data = os.environ.get('SIGNING_KEY_BASE64', '')
           
-          # استخراج محتوای خالص base64 از بین هدر و فوتر
           lines = key_data.strip().split('\n')
           if lines and lines[0].strip().startswith('-----BEGIN'):
               lines = lines[1:-1]
@@ -51,26 +50,29 @@ jobs:
               f.write(base64.b64decode(pure_base64))
         shell: python
 
-      - name: Create key.properties file
+      # استفاده از پایتون برای ساخت key.properties - مطمئن‌ترین روش
+      - name: Create key.properties using Python
+        env:
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
-          echo "storeFile=my-release-key.jks" > android/key.properties
-          echo "storePassword=${{ secrets.STORE_PASSWORD }}" >> android/key.properties
-          echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> android/key.properties
-          echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> android/key.properties
-      
-      # --- مراحل جدید عیب‌یابی ---
-      - name: Verify key.properties Content (DEBUG)
-        run: |
-          echo "--- Verifying content of key.properties ---"
-          cat android/key.properties
-          echo "-------------------------------------------"
-          
-      - name: Check File Location and Permissions (DEBUG)
-        run: |
-          echo "--- Checking location and permissions of key.properties ---"
-          ls -l android/key.properties
-          echo "-----------------------------------------------------------"
-      # ---------------------------
+          import os
+
+          store_password = os.environ.get('STORE_PASSWORD')
+          key_alias = os.environ.get('KEY_ALIAS')
+          key_password = os.environ.get('KEY_PASSWORD')
+
+          properties_content = f"""
+          storeFile=my-release-key.jks
+          storePassword={store_password}
+          keyAlias={key_alias}
+          keyPassword={key_password}
+          """
+
+          with open('android/key.properties', 'w') as f:
+              f.write(properties_content.strip())
+        shell: python
 
       - name: Build Signed APK
         run: flutter build apk --release
