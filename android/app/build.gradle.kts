@@ -26,8 +26,9 @@ if (keystorePropertiesFile.exists()) {
 
 android {
     namespace = "com.example.teacher_class_manager"
-    compileSdk = 34 // مقداردهی مستقیم برای پایداری بیشتر
-    ndkVersion = "25.1.8937393" // مقداردهی مستقیم برای پایداری بیشتر
+    // *** FIX: Upgrading SDK and NDK versions as required by plugins ***
+    compileSdk = 36 
+    ndkVersion = "27.0.12077973"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
@@ -47,7 +48,7 @@ android {
     defaultConfig {
         applicationId = "com.example.teacher_class_manager"
         minSdk = 21
-        targetSdk = 34 // مقداردهی مستقیم برای پایداری بیشتر
+        targetSdk = 36 // Best practice to match targetSdk with compileSdk
         versionCode = flutterVersionCode.toInt()
         versionName = flutterVersionName
     }
