@@ -48,7 +48,7 @@ jobs:
       # مرحله اصلی: خواندن کلید امضا از GitHub Secrets و ساخت فایل jks
       - name: Decode Keystore
         run: |
-          echo "${{ secrets.SIGNING_KEY_BASE64 }}" | base64 --decode > android/app/my-release-key.jks
+          echo "${{ secrets.SIGNING_KEY_BASE64 }}" | base64 --decode --ignore-garbage > android/app/my-release-key.jks
         
       # مرحله ۳ دیباگ: بررسی می‌کنیم که آیا فایل کلید ساخته شده است
       - name: Verify Keystore File
