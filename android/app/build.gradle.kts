@@ -7,25 +7,17 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
-def localProperties = new Properties()
-def localPropertiesFile = rootProject.file("local.properties")
+// خواندن local.properties با سینتکس صحیح Kotlin
+val localProperties = Properties()
+val localPropertiesFile = rootProject.file("local.properties")
 if (localPropertiesFile.exists()) {
-    localPropertiesFile.withReader("UTF-8") { reader ->
-        localProperties.load(reader)
-    }
+    localProperties.load(FileInputStream(localPropertiesFile))
 }
 
-def flutterVersionCode = localProperties.getProperty("flutter.versionCode")
-if (flutterVersionCode == null) {
-    flutterVersionCode = "1"
-}
+val flutterVersionCode = localProperties.getProperty("flutter.versionCode") ?: "1"
+val flutterVersionName = localProperties.getProperty("flutter.versionName") ?: "1.0"
 
-def flutterVersionName = localProperties.getProperty("flutter.versionName")
-if (flutterVersionName == null) {
-    flutterVersionName = "1.0"
-}
-
-// خواندن اطلاعات کلید از فایل key.properties
+// خواندن key.properties با سینتکس صحیح Kotlin
 val keystoreProperties = Properties()
 val keystorePropertiesFile = rootProject.file("android/key.properties")
 if (keystorePropertiesFile.exists()) {
@@ -34,8 +26,8 @@ if (keystorePropertiesFile.exists()) {
 
 android {
     namespace = "com.example.teacher_class_manager"
-    compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    compileSdk = 34 // مقداردهی مستقیم برای پایداری بیشتر
+    ndkVersion = "25.1.8937393" // مقداردهی مستقیم برای پایداری بیشتر
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
@@ -54,8 +46,8 @@ android {
 
     defaultConfig {
         applicationId = "com.example.teacher_class_manager"
-        minSdk = 21 // مطابق با نیاز شما برای اندرویدهای قدیمی‌تر
-        targetSdk = flutter.targetSdkVersion
+        minSdk = 21
+        targetSdk = 34 // مقداردهی مستقیم برای پایداری بیشتر
         versionCode = flutterVersionCode.toInt()
         versionName = flutterVersionName
     }
@@ -63,10 +55,10 @@ android {
     // اضافه کردن بخش امضای دیجیتال با سینتکس صحیح Kotlin
     signingConfigs {
         create("release") {
-            keyAlias = keystoreProperties["keyAlias"] as String
-            keyPassword = keystoreProperties["keyPassword"] as String
+            keyAlias = keystoreProperties.getProperty("keyAlias")
+            keyPassword = keystoreProperties.getProperty("keyPassword")
             storeFile = file("my-release-key.jks")
-            storePassword = keystoreProperties["storePassword"] as String
+            storePassword = keystoreProperties.getProperty("storePassword")
         }
     }
 
@@ -86,5 +78,7 @@ flutter {
 }
 
 dependencies {
+    // نسخه kotlin-stdlib باید با نسخه پلاگین Kotlin هماهنگ باشد
     implementation("org.jetbrains.kotlin:kotlin-stdlib:1.9.23")
 }
+
