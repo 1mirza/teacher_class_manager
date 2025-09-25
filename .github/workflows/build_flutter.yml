@@ -1,70 +1,64 @@
 # .github/workflows/build_flutter.yml
 
-# نام ورک‌فلو که در تب Actions گیت‌هاب نمایش داده می‌شود
-name: Build Flutter App
+name: Build and Sign Flutter App
 
-# تریگر (Trigger): این ورک‌فلو چه زمانی اجرا شود؟
 on:
   push:
     branches:
-      - main # هر بار که کدی به شاخه main پوش شود
+      - main
 
-# جاب‌ها (Jobs): مجموعه‌ای از کارهایی که باید انجام شوند
 jobs:
   build:
-    # سیستم عاملی که جاب روی آن اجرا می‌شود (برای اندروید بهتر است از ubuntu استفاده شود)
     runs-on: ubuntu-latest
-
-    # مراحل (Steps): کارهایی که به ترتیب در جاب انجام می‌شوند
     steps:
-      # 1. کپی کردن کد پروژه از ریپازیتوری به ماشین مجازی گیت‌هاب
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # 2. نصب و راه‌اندازی Java Development Kit (JDK) که برای بیلد اندروید ضروری است
       - name: Set up JDK 11
         uses: actions/setup-java@v3
         with:
           distribution: 'zulu'
           java-version: '11'
 
-      # 3. نصب و راه‌اندازی نسخه پایدار فلاتر
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
 
-      # 4. دریافت تمام پکیج‌ها و وابستگی‌های پروژه
       - name: Get Flutter dependencies
         run: flutter pub get
 
-      # (اختیاری ولی به شدت توصیه شده) 5. آنالیز کد برای پیدا کردن خطاها و مشکلات احتمالی
-      # - name: Analyze project source
-      #   run: flutter analyze
+      # مرحله جدید: خواندن کلید امضا از GitHub Secrets و ساخت فایل jks
+      - name: Decode Keystore
+        run: |
+          echo "${{ secrets.SIGNING_KEY_BASE64 }}" | base64 --decode > android/app/my-release-key.jks
+        
+      # مرحله جدید: ساخت فایل key.properties با استفاده از GitHub Secrets
+      - name: Create key.properties file
+        run: |
+          echo "storeFile=my-release-key.jks" > android/key.properties
+          echo "storePassword=${{ secrets.STORE_PASSWORD }}" >> android/key.properties
+          echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> android/key.properties
+          echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> android/key.properties
 
-      # (اختیاری ولی به شدت توصیه شده) 6. اجرای تست‌های نوشته شده برای پروژه
-      # - name: Run tests
-      #   run: flutter test
-
-      # 7. ساخت فایل APK برای تست و نصب مستقیم روی گوشی‌ها
-      - name: Build Flutter APK
+      # ساخت فایل APK امضا شده
+      - name: Build Signed APK
         run: flutter build apk --release
 
-      # 8. ساخت فایل App Bundle (aab) برای انتشار نهایی در گوگل پلی استور
-      - name: Build Flutter App Bundle
+      # ساخت فایل App Bundle امضا شده
+      - name: Build Signed App Bundle
         run: flutter build appbundle --release
 
-      # 9. آپلود فایل APK ساخته شده به عنوان یک آرتیفکت (Artifact) در گیت‌هاب
-      # بعد از اتمام ورک‌فلو، می‌توانید این فایل را از صفحه مربوط به آن دانلود کنید
+      # آپلود آرتیفکت‌ها
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v3
         with:
           name: release-apk
           path: build/app/outputs/flutter-apk/app-release.apk
 
-      # 10. آپلود فایل App Bundle ساخته شده
       - name: Upload App Bundle Artifact
         uses: actions/upload-artifact@v3
         with:
           name: release-appbundle
           path: build/app/outputs/bundle/release/app-release.aab
+
