@@ -1,0 +1,38 @@
+name: teacher_class_manager
+description: A new Flutter project.
+
+publish_to: 'none' 
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=2.19.6 <3.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations: # برای پشتیبانی از زبان فارسی
+    sdk: flutter
+  
+  cupertino_icons: ^1.0.2
+  sqflite: ^2.2.8+4 # پایگاه داده آفلاین
+  path_provider: ^2.0.15 # برای پیدا کردن مسیر ذخیره دیتابیس
+  path: ^1.8.2
+  shamsi_date: ^1.0.1 # برای تاریخ شمسی
+  image_picker: ^0.8.7+5 # برای انتخاب عکس پروفایل
+  shared_preferences: ^2.1.1 # برای ذخیره وضعیت ورود کاربر
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^2.0.0
+
+flutter:
+  uses-material-design: true
+  
+  # برای استفاده از فونت فارسی (مثال)
+  # fonts:
+  #   - family: Vazir
+  #     fonts:
+  #       - asset: assets/fonts/Vazir.ttf
+
