@@ -23,11 +23,46 @@ jobs:
         with:
           channel: 'stable'
 
+      # یک مرحله برای اطمینان از وجود پایتون
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
       - name: Get Flutter dependencies
         run: flutter pub get
 
-      - name: Decode Keystore
-        run: echo "${{ secrets.SIGNING_KEY_BASE64 }}" | base64 --decode --ignore-garbage > android/app/my-release-key.jks
+      # استفاده از پایتون برای رمزگشایی - مطمئن‌ترین روش
+      - name: Decode Keystore using Python
+        env:
+          SIGNING_KEY_BASE64: ${{ secrets.SIGNING_KEY_BASE64 }}
+        run: |
+          import base64
+          import os
+          
+          key_data = os.environ['SIGNING_KEY_BASE64']
+          
+          # استخراج محتوای خالص base64 از بین هدر و فوتر
+          lines = key_data.strip().split('\n')
+          if lines[0].strip() == '-----BEGIN CERTIFICATE-----':
+              lines = lines[1:-1]
+          
+          pure_base64 = "".join(lines)
+
+          with open('android/app/my-release-key.jks', 'wb') as f:
+              f.write(base64.b64decode(pure_base64))
+        shell: python
+
+      # بررسی اینکه آیا فایل کلید با موفقیت ساخته شده است
+      - name: Verify Keystore File
+        run: |
+          if [ -f "android/app/my-release-key.jks" ]; then
+            echo "Keystore file created successfully."
+            ls -l android/app/my-release-key.jks
+          else
+            echo "Error: Keystore file was not created."
+            exit 1
+          fi
 
       - name: Create key.properties file
         run: |
@@ -36,20 +71,6 @@ jobs:
           echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> android/key.properties
           echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> android/key.properties
       
-      # --- مراحل جدید عیب‌یابی ---
-      - name: Verify key.properties Content (DEBUG)
-        run: |
-          echo "--- Verifying content of key.properties ---"
-          cat android/key.properties
-          echo "-------------------------------------------"
-          
-      - name: Check File Location (DEBUG)
-        run: |
-          echo "--- Checking location and permissions ---"
-          ls -l android/
-          echo "---------------------------------------"
-      # ---------------------------
-
       - name: Build Signed APK
         run: flutter build apk --release
 
@@ -67,3 +88,4 @@ jobs:
         with:
           name: release-appbundle
           path: build/app/outputs/bundle/release/app-release.aab
+
